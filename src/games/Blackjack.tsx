@@ -1,7 +1,7 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 const DECKS = 6
@@ -154,20 +154,8 @@ export default function Blackjack({ isActive }: { isActive: boolean }) {
     update({ phase: 'done', holeHidden: false, result: { kind, payout: win } })
 
     if (!isActiveRef.current) return
-    if (kind === 'blackjack') {
-      confetti({
-        particleCount: 160,
-        spread: 85,
-        origin: { y: 0.55 },
-        colors: ['#facc15', '#22c55e', '#ffffff'],
-        disableForReducedMotion: true,
-      })
-    } else if (win < bet) {
-      tableRef.current?.animate(
-        [0, -12, 12, -8, 8, -4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-        { duration: 450, easing: 'ease-out' },
-      )
-    }
+    if (kind === 'blackjack') spookyBurst({ particleCount: 70, origin: { y: 0.55 } })
+    else if (win < bet) lossFlicker()
   }
 
   const revealThenSettle = (kind: ResultKind) => {
@@ -277,19 +265,19 @@ export default function Blackjack({ isActive }: { isActive: boolean }) {
   } else if (inRound) {
     message = <span className="text-lg text-white/50">…</span>
   } else {
-    message = <span className="text-lg text-white/60">Beat the dealer to 21. Blackjack pays 3:2.</span>
+    message = <span className="text-lg text-white/75">Beat the skeleton to 21. Blackjack pays 3:2.</span>
   }
 
   const bigBtn = 'min-h-16 rounded-2xl text-2xl font-black transition active:scale-95 disabled:opacity-40'
 
   return (
     <div
-      className={`flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_40%,#0b3a24_0%,#07060b_70%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)] ${
+      className={`flex h-dvh w-full flex-col items-center bg-[radial-gradient(ellipse_at_50%_45%,#24381a_0%,#152410_38%,#0d0614_75%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)] ${
         isActive ? '' : '[&_*]:[animation-play-state:paused]'
       }`}
     >
       <div ref={tableRef} className="flex w-full max-w-sm flex-1 flex-col justify-around">
-        <Hand label="Dealer" cards={dealer} hiddenIndex={holeHidden ? 1 : -1} total={dealer.length ? formatTotal(dealerShown) : null} />
+        <Hand label="Skeleton dealer" avatar="💀" cards={dealer} hiddenIndex={holeHidden ? 1 : -1} total={dealer.length ? formatTotal(dealerShown) : null} />
 
         <div aria-live="polite" className="flex min-h-10 items-center justify-center text-center">
           {message}
@@ -312,7 +300,7 @@ export default function Blackjack({ isActive }: { isActive: boolean }) {
               <button type="button" onClick={hit} disabled={phase !== 'player'} className={`${bigBtn} border-2 border-neon bg-neon/15 text-neon`}>
                 Hit
               </button>
-              <button type="button" onClick={stand} disabled={phase !== 'player'} className={`${bigBtn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}>
+              <button type="button" onClick={stand} disabled={phase !== 'player'} className={`${bigBtn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}>
                 Stand
               </button>
             </div>
@@ -328,7 +316,7 @@ export default function Blackjack({ isActive }: { isActive: boolean }) {
         ) : (
           <>
             <BetSelector value={choice} onChange={setChoice} />
-            <button type="button" onClick={deal} className={`${bigBtn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}>
+            <button type="button" onClick={deal} className={`${bigBtn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}>
               Deal for {amount}
             </button>
           </>
@@ -340,12 +328,14 @@ export default function Blackjack({ isActive }: { isActive: boolean }) {
 
 function Hand({
   label,
+  avatar,
   cards,
   hiddenIndex,
   total,
   bust = false,
 }: {
   label: string
+  avatar?: string
   cards: Card[]
   hiddenIndex: number
   total: string | null
@@ -354,7 +344,12 @@ function Hand({
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-bold uppercase tracking-widest text-white/60">{label}</span>
+        {avatar && (
+          <span aria-hidden className="text-3xl leading-none drop-shadow-[0_0_10px_rgba(243,238,252,0.5)]">
+            {avatar}
+          </span>
+        )}
+        <span className="text-sm font-bold uppercase tracking-widest text-white/75">{label}</span>
         {total && (
           <span
             className={`rounded-full px-3 py-0.5 text-lg font-black tabular-nums ${
@@ -392,7 +387,7 @@ function PlayingCard({ card, index, hidden }: { card: Card; index: number; hidde
         style={{ transformStyle: 'preserve-3d', transform: hidden ? 'rotateY(180deg)' : 'none', transitionDuration: `${FLIP_MS}ms` }}
       >
         <div
-          className={`absolute inset-0 flex flex-col justify-between rounded-xl border-2 border-white bg-white p-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.5)] ${color}`}
+          className={`absolute inset-0 flex flex-col justify-between rounded-xl border-2 border-bone bg-bone p-1.5 shadow-[0_4px_14px_rgba(0,0,0,0.5)] ${color}`}
           style={{ backfaceVisibility: 'hidden' }}
         >
           <span className="text-xl font-black leading-none">
@@ -402,7 +397,7 @@ function PlayingCard({ card, index, hidden }: { card: Card; index: number; hidde
           <span className="self-end text-3xl leading-none">{card.suit}</span>
         </div>
         <div
-          className="absolute inset-0 rounded-xl border-2 border-white/90 bg-[repeating-linear-gradient(45deg,#7e22ce_0_8px,#a21caf_8px_16px)] shadow-[0_4px_14px_rgba(0,0,0,0.5)]"
+          className="card-back-cobweb absolute inset-0 rounded-xl border-2 border-[#4b2a66] shadow-[0_4px_14px_rgba(0,0,0,0.5)]"
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
         />
       </div>

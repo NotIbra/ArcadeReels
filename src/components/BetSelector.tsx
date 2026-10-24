@@ -26,7 +26,7 @@ export default function BetSelector({ value, onChange, disabled = false }: Props
             onClick={() => onChange(choice)}
             className={`min-h-12 rounded-xl border-2 text-lg font-bold transition active:scale-95 disabled:opacity-30 ${
               selected
-                ? 'border-coin bg-coin text-black shadow-[0_0_16px_rgba(250,204,21,0.5)]'
+                ? 'border-coin bg-coin text-black shadow-[0_0_16px_rgba(255,117,24,0.5)]'
                 : 'border-white/15 bg-white/5 text-white'
             }`}
           >

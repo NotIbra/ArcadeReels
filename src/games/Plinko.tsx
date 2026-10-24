@@ -1,8 +1,9 @@
-import confetti from 'canvas-confetti'
 import Matter from 'matter-js'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { spookyBurst } from '../theme/effects'
+import { halloween } from '../theme/halloween'
 import { useWallet } from '../wallet/walletStore'
 
 const ROWS = 12
@@ -61,52 +62,105 @@ function computeLayout(w: number, h: number): Layout {
   return { w, h, s, cx, top, rowGap, slotY, slotH, pegR: Math.max(2.5, s * 0.12), ballR: s * 0.28, pegs }
 }
 
-const slotColor = (i: number, light: number) => {
-  const d = Math.abs(i - 6)
-  return `hsl(${(50 - d * 12 + 360) % 360} 90% ${light}%)`
+// Brew colour in each cauldron, by how much it pays.
+const brewColor = (m: number) =>
+  m >= 3 ? halloween.colors.toxic : m >= 1.4 ? halloween.colors.pumpkin : m >= 1 ? halloween.colors.spectral : '#7a1f2b'
+
+function flame(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.beginPath()
+  ctx.moveTo(x, y - size * 1.6)
+  ctx.quadraticCurveTo(x + size, y - size * 0.2, x, y + size * 0.7)
+  ctx.quadraticCurveTo(x - size, y - size * 0.2, x, y - size * 1.6)
+  ctx.fill()
+}
+
+// The candles never change, so they're drawn once per layout and reused as an image every frame.
+const candleLayers = new WeakMap<Layout, HTMLCanvasElement>()
+
+function candleLayer(l: Layout) {
+  let layer = candleLayers.get(l)
+  if (layer) return layer
+  const dpr = window.devicePixelRatio || 1
+  layer = document.createElement('canvas')
+  layer.width = Math.round(l.w * dpr)
+  layer.height = Math.round(l.h * dpr)
+  const ctx = layer.getContext('2d')!
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  for (const peg of l.pegs) {
+    // Wax stick below the wick; the flame sits on the physics peg.
+    ctx.fillStyle = '#e9e1cf'
+    ctx.fillRect(peg.x - l.pegR * 0.7, peg.y + l.pegR * 0.6, l.pegR * 1.4, l.pegR * 2.6)
+    ctx.shadowColor = halloween.colors.pumpkin
+    ctx.shadowBlur = 6
+    ctx.fillStyle = '#ffb347'
+    flame(ctx, peg.x, peg.y, l.pegR)
+    ctx.shadowBlur = 0
+  }
+  candleLayers.set(l, layer)
+  return layer
+}
+
+function pumpkin(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.fillStyle = halloween.colors.pumpkin
+  ctx.beginPath()
+  ctx.ellipse(x, y, r * 1.08, r, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(124,45,18,0.8)'
+  ctx.lineWidth = 1.2
+  for (const k of [-0.45, 0.45]) {
+    ctx.beginPath()
+    ctx.ellipse(x + k * r, y, r * 0.42, r * 0.95, 0, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  ctx.fillStyle = '#3f6212'
+  ctx.fillRect(x - r * 0.15, y - r * 1.35, r * 0.3, r * 0.45)
 }
 
 function draw(ctx: CanvasRenderingContext2D, l: Layout, balls: Ball[], slotFlash: number[], now: number) {
   ctx.clearRect(0, 0, l.w, l.h)
+  ctx.drawImage(candleLayer(l), 0, 0, l.w, l.h)
 
+  // Candles that were just hit flare up (a cheap radial-gradient halo, no shadow blur).
   for (const peg of l.pegs) {
     const glow = Math.max(0, 1 - (now - peg.hitAt) / PEG_GLOW_MS)
+    if (glow <= 0) continue
+    const halo = ctx.createRadialGradient(peg.x, peg.y, 0, peg.x, peg.y, l.pegR * 6)
+    halo.addColorStop(0, `rgba(255,200,90,${0.8 * glow})`)
+    halo.addColorStop(1, 'rgba(255,117,24,0)')
+    ctx.fillStyle = halo
     ctx.beginPath()
-    ctx.arc(peg.x, peg.y, l.pegR * (1 + glow * 0.8), 0, Math.PI * 2)
-    ctx.shadowColor = '#e879f9'
-    ctx.shadowBlur = 4 + glow * 18
-    ctx.fillStyle = glow > 0 ? `rgba(250,${160 + glow * 80},255,1)` : 'rgba(255,255,255,0.75)'
+    ctx.arc(peg.x, peg.y, l.pegR * 6, 0, Math.PI * 2)
     ctx.fill()
+    ctx.fillStyle = '#fff4c2'
+    flame(ctx, peg.x, peg.y, l.pegR * (1 + glow))
   }
 
+  // Cauldron slots: dark pot, bubbling brew on top, multiplier on the pot in ghost-white.
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `800 ${Math.round(l.s * 0.5)}px system-ui, sans-serif`
+  ctx.font = `800 ${Math.round(l.s * 0.5)}px Inter, system-ui, sans-serif`
   MULTIPLIERS.forEach((m, i) => {
     const flash = Math.max(0, 1 - (now - slotFlash[i]) / SLOT_FLASH_MS)
     const x = l.cx + (i - 6) * l.s
     const sw = l.s - 2
-    const lift = flash * 6
-    ctx.shadowColor = slotColor(i, 60)
-    ctx.shadowBlur = 6 + flash * 24
-    ctx.fillStyle = slotColor(i, 45 + flash * 25)
+    const y = l.slotY - flash * 6
+    const brew = brewColor(m)
+    ctx.shadowColor = brew
+    ctx.shadowBlur = 4 + flash * 24
+    ctx.fillStyle = brew
     ctx.beginPath()
-    ctx.roundRect(x - sw / 2, l.slotY - lift, sw, l.slotH, 5)
+    ctx.ellipse(x, y + 3, sw / 2, 4 + flash * 2, 0, 0, Math.PI * 2)
     ctx.fill()
     ctx.shadowBlur = 0
-    ctx.fillStyle = '#1a1206'
-    ctx.fillText(String(m), x, l.slotY - lift + l.slotH / 2)
+    ctx.fillStyle = flash > 0 ? '#3a2f45' : '#221b2b'
+    ctx.beginPath()
+    ctx.roundRect(x - sw / 2, y + 4, sw, l.slotH - 4, [2, 2, sw / 2.2, sw / 2.2])
+    ctx.fill()
+    ctx.fillStyle = halloween.colors.ghost
+    ctx.fillText(String(m), x, y + 4 + (l.slotH - 4) / 2)
   })
 
-  ctx.shadowColor = '#facc15'
-  ctx.shadowBlur = 14
-  ctx.fillStyle = '#fde047'
-  for (const b of balls) {
-    ctx.beginPath()
-    ctx.arc(b.body.position.x, b.body.position.y, l.ballR, 0, Math.PI * 2)
-    ctx.fill()
-  }
-  ctx.shadowBlur = 0
+  for (const b of balls) pumpkin(ctx, b.body.position.x, b.body.position.y, l.ballR)
 }
 
 export default function Plinko({ isActive }: { isActive: boolean }) {
@@ -134,15 +188,7 @@ export default function Plinko({ isActive }: { isActive: boolean }) {
     recordRound({ game: 'plinko', bet, won: win > bet, payout: win })
     setLastWin({ win, mult })
     setRecent((r) => [{ id: performance.now() + Math.random(), mult }, ...r].slice(0, 6))
-    if (celebrate && mult >= 3) {
-      confetti({
-        particleCount: mult >= 10 ? 160 : 70,
-        spread: 70,
-        origin: { y: 0.7 },
-        colors: ['#facc15', '#22c55e', '#e879f9'],
-        disableForReducedMotion: true,
-      })
-    }
+    if (celebrate && mult >= 3) spookyBurst({ particleCount: mult >= 10 ? 70 : 30, origin: { y: 0.7 } })
   }
 
   useEffect(() => {
@@ -295,7 +341,7 @@ export default function Plinko({ isActive }: { isActive: boolean }) {
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_30%,#2e0b3a_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
+    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_30%,#2b0f3a_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
       <div className="flex h-7 items-center gap-1.5">
         {recent.map((r) => (
           <span
@@ -319,7 +365,7 @@ export default function Plinko({ isActive }: { isActive: boolean }) {
             {lastWin.mult}× → {lastWin.win}
           </span>
         ) : (
-          <span className="text-lg text-white/60">Drop as many balls as you like.</span>
+          <span className="text-lg text-white/70">Drop as many pumpkins as you like.</span>
         )}
       </div>
 
@@ -328,7 +374,7 @@ export default function Plinko({ isActive }: { isActive: boolean }) {
         <button
           type="button"
           onClick={drop}
-          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(250,204,21,0.45)] transition active:scale-95"
+          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(255,117,24,0.45)] transition active:scale-95"
         >
           Drop for {amount}
         </button>

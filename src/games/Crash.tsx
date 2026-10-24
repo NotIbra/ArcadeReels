@@ -1,7 +1,8 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { halloween } from '../theme/halloween'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 // Multiplier = e^(GROWTH × ms): 2× after ~4.6s, 10× after ~15s, 100× after ~31s.
@@ -21,6 +22,27 @@ const multAt = (ms: number) => Math.exp(GROWTH * ms)
 
 const chipClass = (x: number) =>
   x >= 10 ? 'bg-coin/20 text-coin' : x >= 2 ? 'bg-win/20 text-win' : 'bg-loss/20 text-loss'
+
+// Fixed star positions (fractions of the board) so the night sky doesn't jump between frames.
+const STARS = Array.from({ length: 22 }, (_, i) => ({ x: ((i * 37) % 97) / 97, y: ((i * 53) % 61) / 100, r: i % 3 === 0 ? 1.4 : 0.8 }))
+
+/** A jagged bolt from the top of the board down to (x, y). Seeded by x so it holds still. */
+function drawLightning(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  let seed = Math.floor(x * 7919) % 233280
+  const rand = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
+  const segments = 7
+  ctx.save()
+  ctx.beginPath()
+  ctx.moveTo(x + (rand() - 0.5) * 60, 0)
+  for (let i = 1; i < segments; i++) ctx.lineTo(x + (rand() - 0.5) * 40, (y * i) / segments)
+  ctx.lineTo(x, y)
+  ctx.strokeStyle = '#fffbe6'
+  ctx.lineWidth = 3
+  ctx.shadowColor = '#c9b8ff'
+  ctx.shadowBlur = 22
+  ctx.stroke()
+  ctx.restore()
+}
 
 function draw(
   canvas: HTMLCanvasElement,
@@ -45,7 +67,22 @@ function draw(
   const X = (t: number) => pad + (t / tMax) * (w - pad * 2)
   const Y = (m: number) => h - pad - ((m - 1) / (mMax - 1)) * (h - pad * 2)
 
-  ctx.font = '600 11px system-ui, sans-serif'
+  // Night sky: stars and a pale moon.
+  ctx.fillStyle = 'rgba(243,238,252,0.55)'
+  for (const star of STARS) {
+    ctx.beginPath()
+    ctx.arc(pad + star.x * (w - pad * 2), pad + star.y * (h - pad * 2), star.r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  const moon = ctx.createRadialGradient(w - 52, 44, 4, w - 48, 48, 26)
+  moon.addColorStop(0, 'rgba(255,247,224,0.5)')
+  moon.addColorStop(1, 'rgba(255,247,224,0)')
+  ctx.fillStyle = moon
+  ctx.beginPath()
+  ctx.arc(w - 48, 48, 26, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.font = '600 11px Inter, system-ui, sans-serif'
   ctx.textBaseline = 'bottom'
   for (let i = 0; i <= 3; i++) {
     const m = 1 + ((mMax - 1) * i) / 3
@@ -55,14 +92,14 @@ function draw(
     ctx.moveTo(pad, y)
     ctx.lineTo(w - pad, y)
     ctx.stroke()
-    ctx.fillStyle = 'rgba(255,255,255,0.35)'
+    ctx.fillStyle = 'rgba(243,238,252,0.6)'
     ctx.fillText(`${m.toFixed(1)}×`, pad + 2, y - 2)
   }
 
   if (cashedAt !== null) {
     const y = Y(cashedAt)
     ctx.setLineDash([6, 6])
-    ctx.strokeStyle = 'rgba(34,197,94,0.8)'
+    ctx.strokeStyle = 'rgba(57,255,20,0.8)'
     ctx.beginPath()
     ctx.moveTo(pad, y)
     ctx.lineTo(w - pad, y)
@@ -70,9 +107,13 @@ function draw(
     ctx.setLineDash([])
   }
 
-  if (elapsed <= 0) return
+  // Before the first round the witch waits at the start of the line.
+  if (elapsed <= 0) {
+    drawWitch(ctx, X(0) + 18, Y(1) - 6, -0.25)
+    return
+  }
 
-  const color = phase === 'crashed' ? '#ef4444' : '#facc15'
+  const color = phase === 'crashed' ? halloween.colors.bloodText : halloween.colors.pumpkin
   const steps = 80
   ctx.beginPath()
   for (let i = 0; i <= steps; i++) {
@@ -90,7 +131,7 @@ function draw(
   ctx.lineTo(X(0), h - pad)
   ctx.closePath()
   const fill = ctx.createLinearGradient(0, headY, 0, h - pad)
-  fill.addColorStop(0, phase === 'crashed' ? 'rgba(239,68,68,0.35)' : 'rgba(250,204,21,0.35)')
+  fill.addColorStop(0, phase === 'crashed' ? 'rgba(179,0,27,0.35)' : 'rgba(255,117,24,0.35)')
   fill.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = fill
   ctx.fill()
@@ -112,12 +153,27 @@ function draw(
   ctx.shadowBlur = 14
   ctx.stroke()
 
-  ctx.beginPath()
-  ctx.arc(headX, headY, 7, 0, Math.PI * 2)
-  ctx.fillStyle = phase === 'crashed' ? '#ef4444' : '#fff'
-  ctx.fill()
   ctx.shadowBlur = 0
   ctx.lineWidth = 1
+
+  // The witch rides the tip of the line, tilted to its slope; at the crash point she's struck by
+  // lightning and tumbles.
+  if (phase === 'crashed') drawLightning(ctx, headX, headY)
+  const prevT = elapsed * 0.97
+  const slope = Math.atan2(headY - Y(Math.min(multAt(prevT), mult)), headX - X(prevT))
+  drawWitch(ctx, headX, headY, phase === 'crashed' ? 0.9 : slope)
+}
+
+function drawWitch(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number) {
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.rotate(angle)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'
+  ctx.fillText('🧹', -4, 2)
+  ctx.fillText('🧙‍♀️', 2, -18)
+  ctx.restore()
 }
 
 export default function Crash({ isActive }: { isActive: boolean }) {
@@ -163,15 +219,7 @@ export default function Crash({ isActive }: { isActive: boolean }) {
     payout(win)
     recordRound({ game: 'crash', bet: betRef.current, won: win > betRef.current, payout: win })
     setCashedAt(at)
-    if (isActiveRef.current) {
-      confetti({
-        particleCount: at >= 10 ? 160 : 80,
-        spread: 75,
-        origin: { y: 0.4 },
-        colors: ['#facc15', '#22c55e', '#ffffff'],
-        disableForReducedMotion: true,
-      })
-    }
+    if (isActiveRef.current) spookyBurst({ particleCount: at >= 10 ? 70 : 40, origin: { y: 0.4 } })
   }
   const cashOutRef = useRef(cashOut)
   cashOutRef.current = cashOut
@@ -200,12 +248,11 @@ export default function Crash({ isActive }: { isActive: boolean }) {
       if (m >= crash) {
         m = crash
         multRef.current = m
+        // Lightning flash on the board at every crash; the loss flicker only if the player was still in.
+        boardRef.current?.animate([{ filter: 'brightness(2.6)' }, { filter: 'brightness(1)' }], { duration: 350, easing: 'ease-out' })
         if (cashedRef.current === null) {
           recordRound({ game: 'crash', bet: betRef.current, won: false, payout: 0 })
-          boardRef.current?.animate(
-            [0, -12, 12, -8, 8, -4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-            { duration: 450, easing: 'ease-out' },
-          )
+          lossFlicker()
         }
         setHistory((hist) => [crash, ...hist].slice(0, 10))
         setPhase('crashed')
@@ -255,15 +302,15 @@ export default function Crash({ isActive }: { isActive: boolean }) {
   } else if (running && cashedAt) {
     status = <span className="text-2xl font-black text-win">+{Math.floor(bet * cashedAt)} banked</span>
   } else if (running) {
-    status = <span className="text-lg text-white/70">Cash out before it crashes!</span>
+    status = <span className="text-lg text-white/75">Cash out before the lightning strikes!</span>
   } else if (error) {
     status = <span className="text-lg font-bold text-loss">{error}</span>
   } else {
-    status = <span className="text-lg text-white/60">Ride the multiplier. Don't get greedy.</span>
+    status = <span className="text-lg text-white/70">Ride the broomstick. Don't get greedy.</span>
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_35%,#0c1f3a_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
+    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_30%,#1d0f33_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
       <div className="flex h-7 w-full max-w-sm items-center gap-1.5 overflow-hidden" aria-label="Last crash points">
         {history.map((x, i) => (
           <span key={history.length - i} className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-black ${chipClass(x)}`}>
@@ -284,7 +331,7 @@ export default function Crash({ isActive }: { isActive: boolean }) {
               phase === 'crashed' ? 'text-loss' : cashedAt ? 'text-win' : 'text-white'
             }`}
           />
-          {phase === 'crashed' && <span className="mt-1 text-lg font-black uppercase tracking-widest text-loss">Crashed</span>}
+          {phase === 'crashed' && <span className="mt-1 font-display text-3xl tracking-wider text-loss">Struck down!</span>}
         </div>
       </div>
 
@@ -294,7 +341,7 @@ export default function Crash({ isActive }: { isActive: boolean }) {
 
       <div className="flex w-full max-w-sm flex-col gap-3">
         <label className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-4">
-          <span className="text-sm font-semibold text-white/70">Auto cash-out</span>
+          <span className="text-sm font-semibold text-white/80">Auto cash-out</span>
           <span className="flex items-center gap-1">
             <input
               type="number"
@@ -316,7 +363,7 @@ export default function Crash({ isActive }: { isActive: boolean }) {
             type="button"
             onClick={() => cashOut(multRef.current)}
             disabled={cashedAt !== null}
-            className={`${btn} bg-win text-black shadow-[0_0_24px_rgba(34,197,94,0.45)]`}
+            className={`${btn} bg-win text-black shadow-[0_0_24px_rgba(57,255,20,0.45)]`}
           >
             {cashedAt !== null ? 'Waiting for crash…' : 'Cash out'}
           </button>
@@ -326,7 +373,7 @@ export default function Crash({ isActive }: { isActive: boolean }) {
             <button
               type="button"
               onClick={start}
-              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}
+              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}
             >
               Start for {amount}
             </button>

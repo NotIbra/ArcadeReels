@@ -99,7 +99,7 @@ export default function StatsScreen({ open, onClose }: Props) {
       >
         <header className="flex items-center justify-between px-5 pb-2 pt-3">
           <div className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-white/20" />
-          <h2 className="pt-2 text-2xl font-black text-white">Stats</h2>
+          <h2 className="pt-2 font-display text-3xl tracking-wide text-coin">Stats</h2>
           <button
             type="button"
             onClick={onClose}

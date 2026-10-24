@@ -36,7 +36,10 @@ export default function CoinCounter({ onOpenStats }: { onOpenStats?: () => void 
     return () => cancelAnimationFrame(frame)
   }, [coins])
 
-  const color = trend === 'up' ? 'text-win' : trend === 'down' ? 'text-loss' : 'text-coin'
+  // The candy-corn balance glows brighter while it is counting to a new value.
+  const glow = trend
+    ? 'drop-shadow-[0_0_10px_rgba(255,117,24,1)] drop-shadow-[0_0_22px_rgba(255,117,24,0.8)]'
+    : 'drop-shadow-[0_0_6px_rgba(255,117,24,0.45)]'
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -44,16 +47,16 @@ export default function CoinCounter({ onOpenStats }: { onOpenStats?: () => void 
       <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex justify-end">{onOpenStats && <MuteButton />}</div>
 
-        <div className="relative flex items-center gap-2 rounded-full border border-coin/40 bg-black/70 px-5 py-2 shadow-[0_0_20px_rgba(250,204,21,0.35)] backdrop-blur">
-          <span aria-hidden className="text-2xl">🪙</span>
-          <span className={`text-2xl font-black tabular-nums transition-colors duration-300 ${color}`}>
+        <div className="relative flex items-center gap-2 rounded-full border border-coin/50 bg-black/70 px-5 py-2 shadow-[0_0_20px_rgba(255,117,24,0.35)] backdrop-blur">
+          <span aria-hidden className="text-2xl">🎃</span>
+          <span className={`text-2xl font-black tabular-nums text-coin transition-[filter] duration-300 ${glow}`}>
             {shown.toLocaleString()}
           </span>
           {winStreak >= STREAK_BADGE_AT && (
             <span
               key={winStreak}
               aria-label={`${winStreak} wins in a row`}
-              className="absolute -bottom-3 -right-3 flex h-7 animate-pop items-center gap-0.5 rounded-full border border-orange-400/70 bg-gradient-to-b from-orange-500 to-red-600 px-2 shadow-[0_0_16px_rgba(249,115,22,0.7)]"
+              className="absolute -bottom-3 -right-3 flex h-7 animate-pop items-center gap-0.5 rounded-full border border-neon/70 bg-gradient-to-b from-neon to-purple-900 px-2 shadow-[0_0_16px_rgba(178,107,255,0.7)]"
             >
               <span aria-hidden className="inline-block animate-flicker text-sm">🔥</span>
               <span className="text-sm font-black tabular-nums text-white">{winStreak}</span>

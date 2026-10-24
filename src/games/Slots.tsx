@@ -1,11 +1,12 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
-const SYMBOLS = ['🍒', '🍋', '🔔', '⭐', '7️⃣', '💎']
-const SEVEN = '7️⃣'
+// Haunted set. 💀💀💀 is the 20× jackpot (it took over from triple sevens; the logic is unchanged).
+const SYMBOLS = ['🎃', '👻', '🦇', '🕷️', '💀', '🧙']
+const SEVEN = '💀'
 // Outcome odds. Return to player = 0.006×20 + 0.035×10 + 0.24×2 = 95%.
 const P_SEVENS = 0.006
 const P_TRIPLE = 0.035
@@ -61,8 +62,8 @@ export default function Slots({ isActive }: { isActive: boolean }) {
   const recordRound = useWallet((s) => s.recordRound)
   const { choice, setChoice, amount } = useBet()
 
-  const [strips, setStrips] = useState(() => [idleStrip('🍒'), idleStrip('7️⃣'), idleStrip('💎')])
-  const [result, setResult] = useState<string[]>(['🍒', '7️⃣', '💎'])
+  const [strips, setStrips] = useState(() => [idleStrip('🎃'), idleStrip('💀'), idleStrip('👻')])
+  const [result, setResult] = useState<string[]>(['🎃', '💀', '👻'])
   const [spinId, setSpinId] = useState(0)
   const [spinning, setSpinning] = useState(false)
   const [last, setLast] = useState<{ bet: number; outcome: Outcome } | null>(null)
@@ -111,20 +112,8 @@ export default function Slots({ isActive }: { isActive: boolean }) {
       setStrips((s) => s.map((strip) => strip.slice(0, 3)))
 
       if (!isActiveRef.current) return
-      if (win) {
-        confetti({
-          particleCount: outcome.mult >= 10 ? 160 : 80,
-          spread: 75,
-          origin: { y: 0.4 },
-          colors: ['#facc15', '#22c55e', '#ffffff'],
-          disableForReducedMotion: true,
-        })
-      } else {
-        machineRef.current?.animate(
-          [0, -12, 12, -8, 8, -4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-          { duration: 450, easing: 'ease-out' },
-        )
-      }
+      if (win) spookyBurst({ particleCount: outcome.mult >= 10 ? 70 : 35, origin: { y: 0.4 } })
+      else lossFlicker()
     })
     return () => {
       cancelled = true
@@ -158,17 +147,17 @@ export default function Slots({ isActive }: { isActive: boolean }) {
   const winSymbol = !spinning && last ? last.outcome.match : null
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#3b0a1e_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
+    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#2c0f3d_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-4">
         <div
           ref={machineRef}
-          className="relative w-full max-w-[300px] rounded-3xl border-4 border-coin/70 bg-casino-card p-3 shadow-[0_0_32px_rgba(250,204,21,0.3)]"
+          className="relative w-full max-w-[300px] rounded-3xl border-4 border-coin/80 bg-[linear-gradient(#24112f,#140a1c)] p-3 shadow-[0_0_32px_rgba(255,117,24,0.35),inset_0_0_20px_rgba(178,107,255,0.25)]"
         >
           <div className="grid grid-cols-3 gap-2">
             {strips.map((strip, i) => (
               <div
                 key={i}
-                className="relative overflow-hidden rounded-xl bg-gradient-to-b from-zinc-200 via-white to-zinc-200"
+                className="relative overflow-hidden rounded-xl bg-gradient-to-b from-[#cfc4ae] via-bone to-[#cfc4ae]"
                 style={{ height: CELL * 3 }}
               >
                 <div ref={(el) => void (stripRefs.current[i] = el)} className="flex flex-col">
@@ -193,14 +182,14 @@ export default function Slots({ isActive }: { isActive: boolean }) {
             ))}
           </div>
           <div
-            className="pointer-events-none absolute inset-x-1 h-0.5 -translate-y-1/2 bg-loss/80 shadow-[0_0_8px_#ef4444]"
+            className="pointer-events-none absolute inset-x-1 h-0.5 -translate-y-1/2 bg-blood shadow-[0_0_10px_#ff3347]"
             style={{ top: 12 + CELL * 1.5 }}
           />
         </div>
 
         <div className="grid w-full max-w-[300px] grid-cols-3 gap-2 text-center text-xs text-white/70">
           <div className="rounded-lg bg-white/5 py-1.5">
-            <div className="text-base">7️⃣7️⃣7️⃣</div>
+            <div className="text-base">💀💀💀</div>
             <div className="font-black text-coin">20×</div>
           </div>
           <div className="rounded-lg bg-white/5 py-1.5">
@@ -227,7 +216,7 @@ export default function Slots({ isActive }: { isActive: boolean }) {
           ) : error ? (
             <span className="text-lg font-bold text-loss">{error}</span>
           ) : (
-            <span className="text-lg text-white/60">Line up 2 or 3 to win.</span>
+            <span className="text-lg text-white/70">Line up 2 or 3 spirits to win.</span>
           )}
         </div>
       </div>
@@ -238,7 +227,7 @@ export default function Slots({ isActive }: { isActive: boolean }) {
           type="button"
           onClick={spin}
           disabled={spinning}
-          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(250,204,21,0.45)] transition active:scale-95 disabled:opacity-50"
+          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(255,117,24,0.45)] transition active:scale-95 disabled:opacity-50"
         >
           {spinning ? '…' : `Spin for ${amount}`}
         </button>

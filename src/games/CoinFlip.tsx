@@ -1,11 +1,14 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 type Side = 'heads' | 'tails'
 type Outcome = { side: Side; won: boolean; bet: number }
+
+// "Skull or Bones": heads is the skull side, tails the crossed bones. Display only.
+const SIDE_LABEL: Record<Side, string> = { heads: 'Skull', tails: 'Bones' }
 
 const FLIP_MS = 1000
 const SPINS = 5
@@ -62,27 +65,15 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
       setFlipping(false)
 
       if (!isActiveRef.current) return
-      if (won) {
-        confetti({
-          particleCount: 120,
-          spread: 75,
-          origin: { y: 0.45 },
-          colors: ['#facc15', '#22c55e', '#ffffff'],
-          disableForReducedMotion: true,
-        })
-      } else {
-        tossRef.current?.animate(
-          [0, -14, 14, -10, 10, -5, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-          { duration: 450, easing: 'ease-out' },
-        )
-      }
+      if (won) spookyBurst({ particleCount: 40, origin: { y: 0.45 } })
+      else lossFlicker()
     }, FLIP_MS)
   }
 
   const lost = outcome && !outcome.won
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#2a1d05_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
+    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#3a1a08_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
       <div className="flex flex-1 flex-col items-center justify-center gap-6">
         <div ref={tossRef} style={{ perspective: '800px' }}>
           <div
@@ -93,8 +84,8 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
               transition: flipping ? `transform ${FLIP_MS}ms cubic-bezier(0.2, 0.7, 0.3, 1)` : 'none',
             }}
           >
-            <CoinFace label="H" sub="HEADS" ring={lost ? 'loss' : 'coin'} />
-            <CoinFace label="T" sub="TAILS" ring={lost ? 'loss' : 'coin'} back />
+            <CoinFace side="heads" ring={lost ? 'loss' : 'coin'} />
+            <CoinFace side="tails" ring={lost ? 'loss' : 'coin'} back />
           </div>
         </div>
 
@@ -103,7 +94,7 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
             <span className="text-xl font-bold text-white/60">Flipping…</span>
           ) : outcome ? (
             <>
-              <span className="block text-sm uppercase tracking-widest text-white/60">{outcome.side}</span>
+              <span className="block text-sm uppercase tracking-widest text-white/70">{SIDE_LABEL[outcome.side]}</span>
               <span className={`block text-3xl font-black ${outcome.won ? 'text-win' : 'text-loss'}`}>
                 {outcome.won ? `+${outcome.bet * 2}` : `−${outcome.bet}`}
               </span>
@@ -111,7 +102,7 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
           ) : error ? (
             <span className="text-lg font-bold text-loss">{error}</span>
           ) : (
-            <span className="text-lg text-white/60">Call it. Win pays 2×.</span>
+            <span className="text-lg text-white/70">Skull or bones? Win pays 2×.</span>
           )}
         </p>
       </div>
@@ -130,7 +121,8 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
                 pick === side ? 'border-neon bg-neon/20 text-neon' : 'border-white/15 bg-white/5 text-white/80'
               }`}
             >
-              {side}
+              {side === 'heads' ? '💀 ' : '🦴 '}
+              {SIDE_LABEL[side]}
             </button>
           ))}
         </div>
@@ -139,7 +131,7 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
           type="button"
           onClick={flip}
           disabled={flipping}
-          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(250,204,21,0.45)] transition active:scale-95 disabled:opacity-50"
+          className="min-h-16 rounded-2xl bg-coin text-2xl font-black text-black shadow-[0_0_24px_rgba(255,117,24,0.45)] transition active:scale-95 disabled:opacity-50"
         >
           {flipping ? '…' : `Flip for ${amount}`}
         </button>
@@ -148,16 +140,24 @@ export default function CoinFlip({ isActive }: { isActive: boolean }) {
   )
 }
 
-function CoinFace({ label, sub, ring, back = false }: { label: string; sub: string; ring: 'coin' | 'loss'; back?: boolean }) {
+function CoinFace({ side, ring, back = false }: { side: Side; ring: 'coin' | 'loss'; back?: boolean }) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col items-center justify-center rounded-full border-8 bg-[radial-gradient(circle_at_35%_30%,#fde68a,#facc15_45%,#a16207)] text-yellow-900 shadow-[inset_0_0_18px_rgba(0,0,0,0.35)] transition-colors ${
-        ring === 'loss' ? 'border-loss' : 'border-yellow-600'
+      className={`absolute inset-0 flex flex-col items-center justify-center rounded-full border-8 bg-[radial-gradient(circle_at_35%_30%,#ffd9b0,#ff7518_45%,#7c2d12)] text-orange-950 shadow-[inset_0_0_18px_rgba(0,0,0,0.4),0_0_30px_rgba(255,117,24,0.45)] transition-colors ${
+        ring === 'loss' ? 'border-blood' : 'border-orange-800'
       }`}
       style={{ backfaceVisibility: 'hidden', transform: back ? 'rotateX(180deg)' : undefined }}
     >
-      <span className="text-7xl font-black leading-none">{label}</span>
-      <span className="text-xs font-bold tracking-[0.3em]">{sub}</span>
+      {side === 'heads' ? (
+        <span className="text-7xl leading-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]">💀</span>
+      ) : (
+        // Crossed bones: two bones rotated across each other.
+        <span className="relative block h-20 w-20 drop-shadow-[0_2px_2px_rgba(0,0,0,0.4)]">
+          <span className="absolute inset-0 flex rotate-45 items-center justify-center text-6xl">🦴</span>
+          <span className="absolute inset-0 flex -rotate-45 items-center justify-center text-6xl">🦴</span>
+        </span>
+      )}
+      <span className="mt-1 text-xs font-black tracking-[0.3em]">{SIDE_LABEL[side].toUpperCase()}</span>
     </div>
   )
 }

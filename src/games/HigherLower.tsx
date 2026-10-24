@@ -1,7 +1,7 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 const SUITS = ['♠', '♥', '♦', '♣'] as const
@@ -62,15 +62,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
     recordRound({ game: 'higher-lower', bet, won: true, payout: win })
     setLastResult(win)
     setPhase('cashed')
-    if (isActiveRef.current) {
-      confetti({
-        particleCount: 140,
-        spread: 80,
-        origin: { y: 0.45 },
-        colors: ['#facc15', '#22c55e', '#ffffff'],
-        disableForReducedMotion: true,
-      })
-    }
+    if (isActiveRef.current) spookyBurst({ particleCount: 50, origin: { y: 0.45 } })
   }
 
   const deal = () => {
@@ -98,12 +90,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
         recordRound({ game: 'higher-lower', bet, won: false, payout: 0 })
         setLastResult(bet)
         setPhase('lost')
-        if (isActiveRef.current) {
-          cardRef.current?.animate(
-            [0, -14, 14, -10, 10, -5, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-            { duration: 450, easing: 'ease-out' },
-          )
-        }
+        if (isActiveRef.current) lossFlicker()
         return
       }
       const newStreak = streak + 1
@@ -118,7 +105,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
   const btn = 'rounded-xl font-black transition active:scale-95 disabled:opacity-40'
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#0b2a1a_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
+    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#2a1140_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
         <div className="flex h-10 items-center gap-1.5" aria-label="Previous cards">
           {history.map((c, i) => (
@@ -153,7 +140,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
           ) : error ? (
             <span className="text-lg font-bold text-loss">{error}</span>
           ) : (
-            <span className="text-lg text-white/60">Guess right to climb the multiplier.</span>
+            <span className="text-lg text-white/70">Guess right to climb the multiplier.</span>
           )}
         </div>
       </div>
@@ -182,7 +169,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
               type="button"
               onClick={() => cashOut(streak)}
               disabled={phase !== 'playing' || streak === 0}
-              className={`${btn} min-h-16 bg-win text-2xl text-black shadow-[0_0_24px_rgba(34,197,94,0.4)]`}
+              className={`${btn} min-h-16 bg-win text-2xl text-black shadow-[0_0_24px_rgba(57,255,20,0.4)]`}
             >
               {streak === 0 ? 'Make a guess' : `Cash out ${cashOutValue}`}
             </button>
@@ -193,7 +180,7 @@ export default function HigherLower({ isActive }: { isActive: boolean }) {
             <button
               type="button"
               onClick={deal}
-              className={`${btn} min-h-16 bg-coin text-2xl text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}
+              className={`${btn} min-h-16 bg-coin text-2xl text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}
             >
               Deal for {amount}
             </button>
@@ -213,7 +200,7 @@ function CardFace({ card, lost, back = false }: { card: Card | null; lost: boole
   if (!card) {
     return (
       <div
-        className="absolute inset-0 rounded-2xl border-4 border-white/90 bg-[repeating-linear-gradient(45deg,#7e22ce_0_10px,#a21caf_10px_20px)] shadow-xl"
+        className="absolute inset-0 card-back-cobweb rounded-2xl border-4 border-[#4b2a66] shadow-[0_0_24px_rgba(178,107,255,0.35)]"
         style={style}
       />
     )
@@ -222,8 +209,8 @@ function CardFace({ card, lost, back = false }: { card: Card | null; lost: boole
   const color = isRed(card) ? 'text-red-600' : 'text-zinc-900'
   return (
     <div
-      className={`absolute inset-0 flex flex-col justify-between rounded-2xl border-4 bg-white p-3 shadow-xl transition-colors ${color} ${
-        lost ? 'border-loss' : 'border-white'
+      className={`absolute inset-0 flex flex-col justify-between rounded-2xl border-4 bg-bone p-3 shadow-xl transition-colors ${color} ${
+        lost ? 'border-blood' : 'border-bone'
       }`}
       style={style}
     >
@@ -243,7 +230,7 @@ function CardFace({ card, lost, back = false }: { card: Card | null; lost: boole
 function MiniCard({ card }: { card: Card }) {
   return (
     <span
-      className={`flex h-10 w-7 flex-col items-center justify-center rounded-md bg-white text-xs font-black leading-none ${
+      className={`flex h-10 w-7 flex-col items-center justify-center rounded-md bg-bone text-xs font-black leading-none ${
         isRed(card) ? 'text-red-600' : 'text-zinc-900'
       }`}
     >

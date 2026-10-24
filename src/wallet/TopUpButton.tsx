@@ -33,7 +33,7 @@ export default function TopUpButton() {
       disabled={!ready}
       className={`pointer-events-auto flex min-h-12 animate-pop items-center gap-2 rounded-full px-5 text-lg font-black shadow-lg transition active:scale-95 ${
         ready
-          ? 'bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.6)]'
+          ? 'bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.6)]'
           : 'border border-white/15 bg-black/80 text-white/70 backdrop-blur'
       }`}
     >

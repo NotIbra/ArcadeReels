@@ -11,7 +11,7 @@ export default function MuteButton() {
       aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
       aria-pressed={!muted}
       className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border bg-black/70 backdrop-blur active:scale-95 ${
-        muted ? 'border-white/15 text-white/50' : 'border-neon/60 text-neon shadow-[0_0_14px_rgba(232,121,249,0.45)]'
+        muted ? 'border-white/15 text-white/50' : 'border-neon/60 text-neon shadow-[0_0_14px_rgba(178,107,255,0.45)]'
       }`}
     >
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">

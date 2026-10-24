@@ -14,14 +14,14 @@ export interface GameEntry {
   component: ComponentType<{ isActive: boolean }>
 }
 
-// Add one line per game, e.g. { id: 'slots', name: 'Slots', component: Slots },
+// Add one line per game, e.g. { id: 'slots', name: 'Haunted Slots', component: Slots },
 export const games: GameEntry[] = [
-  { id: 'coin-flip', name: 'Coin Flip', component: CoinFlip },
+  { id: 'coin-flip', name: 'Skull or Bones', component: CoinFlip },
   { id: 'higher-lower', name: 'Higher or Lower', component: HigherLower },
-  { id: 'scratch-card', name: 'Scratch Card', component: ScratchCard },
-  { id: 'plinko', name: 'Plinko', component: Plinko },
-  { id: 'slots', name: 'Slots', component: Slots },
-  { id: 'crash', name: 'Crash', component: Crash },
-  { id: 'blackjack', name: 'Blackjack', component: Blackjack },
-  { id: 'horse-racing', name: 'Horse Racing', component: HorseRacing },
+  { id: 'scratch-card', name: 'Tombstone Scratch', component: ScratchCard },
+  { id: 'plinko', name: 'Pumpkin Drop', component: Plinko },
+  { id: 'slots', name: 'Haunted Slots', component: Slots },
+  { id: 'crash', name: "Witch's Flight", component: Crash },
+  { id: 'blackjack', name: 'Bone Jack', component: Blackjack },
+  { id: 'horse-racing', name: 'Headless Horse Derby', component: HorseRacing },
 ]

@@ -1,16 +1,33 @@
 @import "tailwindcss";
 
+/*
+ * Halloween theme. Values mirror src/theme/halloween.ts. The old token names are kept so every game
+ * picks up the new palette: coin = pumpkin, win = toxic green, loss = blood red (lifted for text),
+ * neon = spectral purple.
+ */
 @theme {
-  --color-casino-bg: #07060b;
-  --color-casino-card: #12101c;
-  --color-coin: #facc15;
-  --color-win: #22c55e;
-  --color-loss: #ef4444;
-  --color-neon: #e879f9;
+  --color-casino-bg: #0d0614;
+  --color-casino-card: #1a0f26;
+  --color-coin: #ff7518;
+  --color-win: #39ff14;
+  --color-loss: #ff3347;
+  --color-blood: #b3001b;
+  --color-neon: #b26bff;
+  --color-moss: #1c2a12;
+  --color-bone: #efe8d8;
+  --color-white: #f3eefc;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Creepster", "Inter", system-ui, sans-serif;
 
   --animate-pop: pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
   --animate-flicker: flicker 1.2s ease-in-out infinite;
   --animate-deal: deal 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  --animate-title-flicker: title-flicker 4s linear infinite;
+  --animate-ghost-rise: ghost-rise 3.2s ease-out forwards;
+  --animate-fog: fog 38s linear infinite;
+  --animate-bat: bat 17s linear infinite;
+  --animate-flap: flap 0.25s ease-in-out infinite alternate;
 
   @keyframes deal {
     0% {
@@ -43,6 +60,64 @@
       transform: scale(1.15) rotate(4deg);
     }
   }
+
+  /* A failing neon tube: mostly on, with a couple of quick drop-outs. */
+  @keyframes title-flicker {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+      opacity: 1;
+      text-shadow: 0 0 6px #ff7518, 0 0 22px #ff7518, 0 0 44px rgba(255, 117, 24, 0.6);
+    }
+    20%, 24%, 55% {
+      opacity: 0.35;
+      text-shadow: none;
+    }
+  }
+
+  @keyframes ghost-rise {
+    0% {
+      transform: translateY(40px) scale(0.8);
+      opacity: 0;
+    }
+    20% {
+      opacity: 0.95;
+    }
+    100% {
+      transform: translateY(-60vh) translateX(20px) scale(1.15);
+      opacity: 0;
+    }
+  }
+
+  /* The fog layer is 200% wide; sliding it by half its width loops seamlessly. */
+  @keyframes fog {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Bats cross the screen in the first ~25% of the cycle, then stay off-screen. */
+  @keyframes bat {
+    0% {
+      transform: translate(-15vw, 0);
+    }
+    12% {
+      transform: translate(50vw, -22px);
+    }
+    25%, 100% {
+      transform: translate(115vw, 8px);
+    }
+  }
+
+  @keyframes flap {
+    from {
+      transform: scaleY(1);
+    }
+    to {
+      transform: scaleY(0.55);
+    }
+  }
 }
 
 html,
@@ -51,7 +126,8 @@ body,
   height: 100%;
   margin: 0;
   background: var(--color-casino-bg);
-  color: #fff;
+  color: var(--color-white);
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -75,4 +151,19 @@ body {
 input {
   user-select: text;
   -webkit-user-select: text;
+}
+
+/* Cobweb-covered card back, shared by Higher or Lower and Bone Jack. */
+.card-back-cobweb {
+  background-color: #2a1140;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23d9c8ff' stroke-opacity='.35' stroke-width='1.2'%3E%3Cpath d='M0 0L100 100M0 0L100 35M0 0L35 100M0 0L100 65M0 0L65 100'/%3E%3Cpath d='M18 0Q14 14 0 18M36 0Q30 28 0 36M56 0Q46 46 0 56M78 0Q64 64 0 78'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(circle at 70% 75%, #4b1d6e, #2a1140 70%);
+  background-size: 100% 100%, 100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe-only {
+    animation: none !important;
+  }
 }

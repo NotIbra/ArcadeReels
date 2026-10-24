@@ -1,18 +1,18 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 type SymbolDef = { icon: string; mult: number; chance: number }
 
 // Chance of a card being a winner for each symbol. Total ≈ 27% win rate, ≈ 88% return.
 const SYMBOLS: SymbolDef[] = [
-  { icon: '🍒', mult: 2, chance: 0.15 },
-  { icon: '🍋', mult: 3, chance: 0.07 },
-  { icon: '🔔', mult: 5, chance: 0.03 },
-  { icon: '💎', mult: 10, chance: 0.012 },
-  { icon: '7️⃣', mult: 25, chance: 0.004 },
+  { icon: '🍬', mult: 2, chance: 0.15 },
+  { icon: '🕯️', mult: 3, chance: 0.07 },
+  { icon: '🦇', mult: 5, chance: 0.03 },
+  { icon: '🔮', mult: 10, chance: 0.012 },
+  { icon: '💀', mult: 25, chance: 0.004 },
 ]
 const BRUSH = 38
 const REVEAL_AT = 0.55
@@ -49,23 +49,42 @@ function drawCover(canvas: HTMLCanvasElement) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.globalCompositeOperation = 'source-over'
 
-  const grad = ctx.createLinearGradient(0, 0, width, height)
-  grad.addColorStop(0, '#9ca3af')
-  grad.addColorStop(0.45, '#f3f4f6')
-  grad.addColorStop(0.55, '#d1d5db')
-  grad.addColorStop(1, '#6b7280')
-  ctx.fillStyle = grad
+  // Graveyard earth behind the stones.
+  ctx.fillStyle = '#1b1422'
   ctx.fillRect(0, 0, width, height)
 
-  ctx.fillStyle = 'rgba(255,255,255,0.35)'
-  for (let i = 0; i < 160; i++) {
-    ctx.fillRect(Math.random() * width, Math.random() * height, 2, 2)
-  }
-  ctx.fillStyle = 'rgba(55,65,81,0.75)'
-  ctx.font = '900 26px system-ui, sans-serif'
+  // One grey gravestone over each grid cell (the grid has 8px padding and 8px gaps).
+  const pad = 8
+  const cell = (width - pad * 2 - 16) / 3
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('SCRATCH HERE', width / 2, height / 2)
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const x = pad + c * (cell + 8)
+      const y = pad + r * (cell + 8)
+      const stone = ctx.createLinearGradient(x, y, x + cell, y + cell)
+      stone.addColorStop(0, '#a8a4ad')
+      stone.addColorStop(0.5, '#8a8590')
+      stone.addColorStop(1, '#5d5963')
+      ctx.fillStyle = stone
+      ctx.beginPath()
+      ctx.roundRect(x, y, cell, cell, [cell / 2, cell / 2, 6, 6])
+      ctx.fill()
+      // Speckles and a crack for texture.
+      ctx.fillStyle = 'rgba(30,25,35,0.25)'
+      for (let i = 0; i < 26; i++) ctx.fillRect(x + Math.random() * cell, y + cell * 0.25 + Math.random() * cell * 0.7, 2, 2)
+      ctx.strokeStyle = 'rgba(40,35,45,0.5)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(x + cell * 0.7, y + cell * 0.2)
+      ctx.lineTo(x + cell * 0.62, y + cell * 0.38)
+      ctx.lineTo(x + cell * 0.74, y + cell * 0.52)
+      ctx.stroke()
+      ctx.fillStyle = 'rgba(35,30,40,0.8)'
+      ctx.font = `${Math.round(cell * 0.24)}px Creepster, Georgia, serif`
+      ctx.fillText('R.I.P.', x + cell / 2, y + cell * 0.6)
+    }
+  }
 }
 
 /** Fraction of the cover that has been scratched away (sampled for speed). */
@@ -113,20 +132,8 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
     recordRound({ game: 'scratch-card', bet, won: win > 0, payout: win })
 
     if (!isActiveRef.current) return
-    if (win) {
-      confetti({
-        particleCount: 140,
-        spread: 80,
-        origin: { y: 0.45 },
-        colors: ['#facc15', '#22c55e', '#ffffff'],
-        disableForReducedMotion: true,
-      })
-    } else {
-      boardRef.current?.animate(
-        [0, -12, 12, -8, 8, -4, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-        { duration: 450, easing: 'ease-out' },
-      )
-    }
+    if (win) spookyBurst({ particleCount: 50, origin: { y: 0.45 } })
+    else lossFlicker()
   }
   // Native listeners below are bound once, so they call the latest finish() through a ref.
   const finishRef = useRef(finish)
@@ -236,11 +243,11 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
   const btn = 'min-h-16 rounded-2xl text-2xl font-black transition active:scale-95 disabled:opacity-50'
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_35%,#1e1b4b_0%,#07060b_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
+    <div className="flex h-dvh w-full flex-col items-center justify-between bg-[radial-gradient(circle_at_50%_30%,#2a2238_0%,#0d0614_65%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.5rem)]">
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-3">
         <div
           ref={boardRef}
-          className="relative aspect-square w-full max-w-[290px] rounded-2xl border-4 border-coin/70 bg-casino-card p-2 shadow-[0_0_28px_rgba(250,204,21,0.25)]"
+          className="relative aspect-square w-full max-w-[290px] rounded-2xl border-4 border-[#4a4352] bg-[#1b1422] p-2 shadow-[0_0_28px_rgba(178,107,255,0.25)]"
         >
           <div className="grid h-full grid-cols-3 gap-2">
             {Array.from({ length: 9 }, (_, i) => {
@@ -249,10 +256,10 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
               return (
                 <div
                   key={i}
-                  className={`flex items-center justify-center rounded-xl text-5xl ${
+                  className={`flex items-center justify-center rounded-t-[50%] rounded-b-md text-5xl ${
                     winning
                       ? `bg-coin/25 ring-4 ring-coin ${isActive ? 'animate-pulse' : ''}`
-                      : 'bg-white/5'
+                      : 'bg-[#2e2836] shadow-[inset_0_-6px_12px_rgba(0,0,0,0.5)]'
                   }`}
                 >
                   {icon}
@@ -269,7 +276,7 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
           />
         </div>
 
-        <div className="flex gap-3 text-xs text-white/60">
+        <div className="flex gap-3 text-xs text-white/75">
           {SYMBOLS.map((s) => (
             <span key={s.icon} className="flex items-center gap-0.5">
               <span className="text-base">{s.icon}</span>
@@ -290,7 +297,7 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
           ) : error ? (
             <span className="text-lg font-bold text-loss">{error}</span>
           ) : (
-            <span className="text-lg text-white/60">Match 3 symbols to win.</span>
+            <span className="text-lg text-white/70">Dig up 3 matching symbols to win.</span>
           )}
         </div>
       </div>
@@ -311,7 +318,7 @@ export default function ScratchCard({ isActive }: { isActive: boolean }) {
             <button
               type="button"
               onClick={buy}
-              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}
+              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}
             >
               {phase === 'done' ? `Buy another for ${amount}` : `Buy card for ${amount}`}
             </button>

@@ -1,24 +1,24 @@
-import confetti from 'canvas-confetti'
 import { useEffect, useRef, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
+import { lossFlicker, spookyBurst } from '../theme/effects'
 import { useWallet } from '../wallet/walletStore'
 
 const NAMES = [
-  'Neigh Sayer', 'Hoof Hearted', 'Gallop Poll', 'Mane Event', 'Hay Girl', 'Usain Colt',
-  'Unstable', 'Whinny the Pooh', 'Trotsky', 'Pony Express', 'Horsey McHorseface', 'Mare-velous',
-  'Furlong Shot', 'Stirrup Trouble', 'Bridle Party', 'Canter Believe It', 'Neighbourhood Watch', 'Mustang Sally',
-  'Filly Cheesesteak', 'Rein Man', 'Foal Play', 'Sir Trots-a-Lot', 'Haymaker', 'Pasture Bedtime',
-  "Bit O' Luck", 'Thunder Hooves', 'Saddle Up Buttercup', 'Galloping Gourmet', 'Oat Couture', 'Seabiscuit Jr',
+  'Nightmare Express', 'Ghoul Runner', 'Pale Rider', 'Headless Harry', 'Grave Digger', 'Phantom Gallop',
+  'Neighcromancer', 'Banshee Bolt', 'Crypt Keeper', 'Spectral Sprint', 'Bone Rattler', 'Midnight Mare',
+  'Hex Appeal', 'Wraith Runner', 'Zombie Trot', "Mummy's Boy", 'Count Gallopula', 'Witching Hour',
+  'Ghost Rider', 'Poltergeist', 'Black Cat Luck', 'Haunted Hooves', 'Coffin Dodger', 'Fang-tastic',
+  "Jack O'Canter", 'Spooky Steed', 'Cobweb Comet', 'Shadow Stallion', 'Moonlight Howler', 'Boo-cephalus',
 ]
 // Traditional saddlecloth colours for numbers 1–6.
 const SADDLE = [
   { bg: '#dc2626', fg: '#ffffff' },
   { bg: '#f8fafc', fg: '#111827' },
   { bg: '#2563eb', fg: '#ffffff' },
-  { bg: '#facc15', fg: '#111827' },
+  { bg: '#ff7518', fg: '#111827' },
   { bg: '#16a34a', fg: '#ffffff' },
-  { bg: '#111827', fg: '#facc15' },
+  { bg: '#111827', fg: '#ff7518' },
 ]
 const RUNNERS = 6
 // Odds are the longest standard price that still keeps this margin over a horse's true chance.
@@ -145,20 +145,8 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
 
     if (!isActiveRef.current) return
     flashRef.current?.animate([{ opacity: 0.95 }, { opacity: 0 }], { duration: 700, easing: 'ease-out' })
-    if (win > cost) {
-      confetti({
-        particleCount: rank === 0 ? 150 : 70,
-        spread: 80,
-        origin: { y: 0.45 },
-        colors: ['#facc15', '#22c55e', '#ffffff'],
-        disableForReducedMotion: true,
-      })
-    } else if (win === 0) {
-      trackRef.current?.animate(
-        [0, -10, 10, -6, 6, -3, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-        { duration: 450, easing: 'ease-out' },
-      )
-    }
+    if (win > cost) spookyBurst({ particleCount: rank === 0 ? 60 : 30, origin: { y: 0.45 } })
+    else if (win === 0) lossFlicker()
   }
   const settleRef = useRef(settle)
   settleRef.current = settle
@@ -257,11 +245,11 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
       </span>
     )
   } else {
-    status = <span className="text-base text-white/60">Tap a horse to back it.</span>
+    status = <span className="text-base text-white/75">Tap a phantom steed to back it.</span>
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_35%,#14301a_0%,#07060b_70%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
+    <div className="flex h-dvh w-full flex-col items-center bg-[radial-gradient(circle_at_50%_30%,#1a1f3d_0%,#0d0614_70%)] px-4 pb-[calc(max(1rem,env(safe-area-inset-bottom))+2.75rem)] pt-[calc(max(0.75rem,env(safe-area-inset-top))+6.25rem)]">
       <div className="flex h-7 w-full max-w-sm items-center gap-1.5 overflow-hidden" aria-label="Last 5 winners">
         {winners.length > 0 && <span className="shrink-0 text-xs font-bold uppercase text-white/40">Last</span>}
         {winners.map((w, i) => (
@@ -272,7 +260,7 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
         ))}
       </div>
 
-      <div ref={trackRef} className="relative mt-1 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-coin/40 shadow-[0_0_24px_rgba(34,197,94,0.2)]">
+      <div ref={trackRef} className="relative mt-1 w-full max-w-sm overflow-hidden rounded-2xl border-2 border-[#5a6488]/60 shadow-[0_0_24px_rgba(200,210,255,0.15)]">
         {horses.map((horse, i) => {
           const selected = pick === i
           return (
@@ -285,7 +273,7 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
               aria-pressed={selected}
               aria-label={`${horse.num} ${horse.name}, ${formatOdds(horse.odds)}`}
               className={`relative block h-12 w-full overflow-hidden border-b border-white/10 text-left last:border-b-0 ${
-                selected ? 'bg-neon/20 shadow-[inset_0_0_0_2px_#e879f9]' : i % 2 ? 'bg-[#123322]' : 'bg-[#0f2a1c]'
+                selected ? 'bg-neon/20 shadow-[inset_0_0_0_2px_#b26bff]' : i % 2 ? 'bg-[#161c33]' : 'bg-[#11162a]'
               }`}
             >
               <span
@@ -316,6 +304,7 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
           )
         })}
 
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_88%_10%,rgba(255,247,224,0.28)_0,rgba(255,247,224,0.1)_12%,transparent_30%),linear-gradient(to_top,rgba(200,200,230,0.18),transparent_45%)]" />
         <div ref={flashRef} className="pointer-events-none absolute inset-0 bg-white opacity-0" />
       </div>
 
@@ -339,7 +328,7 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
 
       <div className="flex w-full max-w-sm flex-col gap-3">
         {phase === 'result' ? (
-          <button type="button" onClick={nextRace} className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}>
+          <button type="button" onClick={nextRace} className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}>
             Next race
           </button>
         ) : (
@@ -365,7 +354,7 @@ export default function HorseRacing({ isActive }: { isActive: boolean }) {
               type="button"
               onClick={start}
               disabled={racing || pick === null}
-              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(250,204,21,0.45)]`}
+              className={`${btn} bg-coin text-black shadow-[0_0_24px_rgba(255,117,24,0.45)]`}
             >
               {racing ? 'Racing…' : pick === null ? 'Pick a horse' : "And they're off!"}
             </button>

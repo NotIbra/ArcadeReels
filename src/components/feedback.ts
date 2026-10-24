@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type SoundName = 'spin' | 'win' | 'lose'
+export type SoundName = 'spin' | 'win' | 'lose' | 'bigwin'
 
+// Halloween set: spin = creaky door, lose = low groan, bigwin = witch cackle (scripts/generate-sounds.mjs).
 const FILES: Record<SoundName, string> = {
   spin: '/sounds/spin.wav',
   win: '/sounds/win.wav',
   lose: '/sounds/lose.wav',
+  bigwin: '/sounds/bigwin.wav',
 }
 const VOLUME = 0.6
 
