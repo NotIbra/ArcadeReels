@@ -4,7 +4,7 @@ import { HAPTICS, playSound, unlockAudio, useSound, vibrate } from './feedback'
 
 /**
  * App-wide sound + haptics, driven by the wallet so every game gets them without extra code:
- * a bet (placeBet) plays "spin", a recorded win/loss plays "win"/"lose", a big win plays "bigwin".
+ * a bet (placeBet) plays "spin", a recorded win/loss plays "win"/"lose".
  */
 export function useFeedback() {
   useEffect(() => {
@@ -12,13 +12,9 @@ export function useFeedback() {
       const last = s.history[s.history.length - 1]
       const prevLast = prev.history[prev.history.length - 1]
       if (last && last !== prevLast) {
-        const isBigWin = s.bigWin !== null && s.bigWin !== prev.bigWin
-        if (isBigWin) {
-          playSound('bigwin')
-          vibrate(HAPTICS.bigWin)
-        } else if (last.won) {
+        if (last.won) {
           playSound('win')
-          vibrate(HAPTICS.win)
+          vibrate(s.bigWin && s.bigWin !== prev.bigWin ? HAPTICS.bigWin : HAPTICS.win)
         } else {
           playSound('lose')
           vibrate(HAPTICS.lose)

@@ -1,6 +1,6 @@
 // Minimal offline support: network-first for pages, cache-first for everything else (hashed assets,
 // icons, sounds). Bump CACHE to throw away old caches.
-const CACHE = 'scroll-casino-v2'
+const CACHE = 'scroll-casino-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/manifest.webmanifest'])))
