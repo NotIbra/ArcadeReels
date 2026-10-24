@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-casino-bg: #07060b;
+  --color-casino-card: #12101c;
+  --color-coin: #facc15;
+  --color-win: #22c55e;
+  --color-loss: #ef4444;
+  --color-neon: #e879f9;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-casino-bg);
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Stop pull-to-refresh and rubber-band bounce: the page itself never scrolls, only the feed swipes. */
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+}
