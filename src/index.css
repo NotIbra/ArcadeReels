@@ -10,6 +10,18 @@
 
   --animate-pop: pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
   --animate-flicker: flicker 1.2s ease-in-out infinite;
+  --animate-deal: deal 0.38s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+
+  @keyframes deal {
+    0% {
+      transform: translate(140px, -220px) rotate(-25deg) scale(0.8);
+      opacity: 0;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
 
   @keyframes pop {
     0% {
