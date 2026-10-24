@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import BetSelector from '../components/BetSelector'
 import { useBet } from '../components/useBet'
 import CoinCounter from './CoinCounter'
-import { STARTING_COINS, topUpAvailableIn, useWallet } from './walletStore'
+import { topUpAvailableIn, useWallet } from './walletStore'
 
 function formatCooldown(ms: number) {
   const secs = Math.ceil(ms / 1000)
@@ -11,7 +11,7 @@ function formatCooldown(ms: number) {
 
 // Dev-only page (open /#wallet-test) for poking the wallet by hand.
 export default function WalletTestPage() {
-  const { placeBet, payout, recordRound, claimTopUp, lastTopUpAt, history } = useWallet()
+  const { placeBet, payout, recordRound, claimTopUp, resetWallet, lastTopUpAt, history } = useWallet()
   const { choice, setChoice, amount } = useBet()
   const [pendingBet, setPendingBet] = useState<number | null>(null)
   const [message, setMessage] = useState('Pick a bet and tap Place bet.')
@@ -45,7 +45,7 @@ export default function WalletTestPage() {
   const topUp = () => setMessage(claimTopUp() ? 'claimTopUp() → true, +500' : 'claimTopUp() → false (cooldown)')
 
   const reset = () => {
-    useWallet.setState({ coins: STARTING_COINS, history: [], lastTopUpAt: null })
+    resetWallet()
     setPendingBet(null)
     setMessage('Wallet reset')
   }
